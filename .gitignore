@@ -1,0 +1,10 @@
+local_data/
+__pycache__/
+
+# Reference source and compiled client; not needed at runtime.
+/DanXi/
+/danxi_exe/
+
+# Local authentication caches, including accidental copies elsewhere.
+*.dpapi
+webvpn.tmp
