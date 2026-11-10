@@ -8,10 +8,10 @@ import secrets
 import threading
 import webbrowser
 
-import local_daily as daily
-from daily_gui import DEFAULTS, rank_posts, body, tags_text, fetch_replies
+from . import forum as daily
+from .ranking import DEFAULTS, rank_posts, fetch_replies
 
-STATIC = Path(__file__).parent / 'web'
+STATIC = daily.ROOT / 'web'
 
 
 def validate(raw):
@@ -102,14 +102,12 @@ class State:
         threading.Thread(target=self.worker, args=(rules, reply), daemon=True).start()
 
     def worker(self, rules, reply):
-        original = daily.login_dialog
-        daily.login_dialog = self.login
         try:
             with redirect_stdout(self):
-                from webvpn_transport import WebVPN
+                from .webvpn import WebVPN
                 with WebVPN(self.stop_event) if rules['webvpn'] else nullcontext(None) as transport:
                     if self.stop_event.is_set(): raise RuntimeError('已停止当前任务。')
-                    client = daily.Client(transport)
+                    client = daily.Client(transport, login_callback=self.login)
                     if reply:
                         floors = fetch_replies(client, reply['id'], reply['offset'])
                     else:
@@ -140,7 +138,6 @@ class State:
                 self.error = '' if self.stop_event.is_set() else (f'接口返回 HTTP {error.code}' if isinstance(error, daily.urllib.error.HTTPError) else str(error))
                 self.message = '已停止，已获取内容保留，可继续查找。' if self.stop_event.is_set() else '请求失败，可检查设置后重试。'
         finally:
-            daily.login_dialog = original
             with self.lock: self.busy = False
 
 
@@ -164,7 +161,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == '/api/state':
             if not self.authorized(): return self.send(403, {'error': '无权访问'})
             return self.send(200, self.server.state.snapshot())
-        files = {'/': ('index.html', 'text/html; charset=utf-8'), '/app.js': ('app.js', 'text/javascript; charset=utf-8'), '/style.css': ('style.css', 'text/css; charset=utf-8'), '/extra.css': ('extra.css', 'text/css; charset=utf-8')}
+        files = {'/': ('index.html', 'text/html; charset=utf-8'), '/app.js': ('app.js', 'text/javascript; charset=utf-8'), '/style.css': ('style.css', 'text/css; charset=utf-8')}
         if self.path not in files: return self.send(404, {'error': '不存在'})
         name, mime = files[self.path]
         self.send(200, (STATIC / name).read_bytes(), mime)
@@ -222,7 +219,7 @@ def make_server():
     return server
 
 
-if __name__ == '__main__':
+def run():
     server = make_server()
     webbrowser.open(f'http://127.0.0.1:{server.server_port}/#key={server.key}')
     try: server.serve_forever()

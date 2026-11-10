@@ -1,5 +1,7 @@
 local_data/
 __pycache__/
+*.py[cod]
+/.venv/
 
 # Reference source and compiled client; not needed at runtime.
 /DanXi/

@@ -48,11 +48,11 @@ class WebVPN:
         if self.stop_event is not None and self.stop_event.is_set():
             raise RuntimeError('已停止当前任务。')
     def cache_path(self):
-        from local_daily import DATA
+        from .forum import DATA
         return DATA / 'webvpn.dpapi'
 
     def restore_session(self):
-        from local_daily import protect
+        from .forum import protect
         path = self.cache_path()
         if not path.exists():
             return False
@@ -77,7 +77,7 @@ class WebVPN:
         return False
 
     def save_session(self):
-        from local_daily import protect
+        from .forum import protect
         cookies = [c for c in self.context.cookies()
                    if c.get('domain', '').lstrip('.') == 'webvpn.fudan.edu.cn']
         if not cookies:
@@ -103,7 +103,7 @@ class WebVPN:
         try:
             from playwright.sync_api import sync_playwright, Error
         except ImportError:
-            raise RuntimeError('请先运行 python -m pip install -r requirements-local.txt') from None
+            raise RuntimeError('请先双击 setup.cmd 安装依赖，然后重新启动。') from None
         self.engine = sync_playwright().start()
         self.browser = None
         try:
