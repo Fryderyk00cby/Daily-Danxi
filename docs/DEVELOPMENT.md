@@ -9,10 +9,16 @@
 | `app/forum.py` | `/api/login`、令牌刷新、帖子时间分页、DPAPI 加解密 |
 | `app/webvpn.py` | WebVPN URL 转换、交互认证、网关 Cookie 缓存 |
 | `app/ranking.py` | 默认设置、关键词匹配、热度排序、楼层分页 |
+| `app/images.py` | 官方图床请求、WebVPN Cookie 复用、大小限制与内存缓存 |
 | `app/server.py` | 设置校验、本地 API、后台任务、暂停进度、页面登录回调 |
 | `web/app.js` | 轮询状态、展示卡片和讨论、提交设置及登录 |
+| `web/images.js` | 图片语法解析、受保护的图片请求、懒加载、重试和放大 |
 
-网页正文通过 `textContent` 展示，不把帖子原文当作 HTML 执行。静态文件按明确的白名单提供，不对外开放整个项目目录。
+网页正文通过文本节点展示，不把帖子原文当作 HTML 执行。图片仅提取 URL 和替代文本，不复制原帖的 HTML 属性。`POST /api/image` 同样要求本机访问密钥，只允许官方图床地址，不跟随重定向，不对客户端返回 WebVPN Cookie。图片由浏览器 Blob URL 展示，替换内容时释放 URL。静态文件按明确的白名单提供，不对外开放整个项目目录。
+
+图片沿用用户选择的直连/WebVPN 路由，不因 WebVPN 请求失败而自动切换网络。单张最多 12 MB，后端最多同时获取 3 张，内存缓存最多 32 MB / 128 张；图片不持久保存。该路径不会为每张图片弹出认证窗口，会话失效需要先重新生成日报完成登录。
+
+图片响应按文件签名识别 JPEG、PNG、GIF、WebP 和 AVIF，并向浏览器返回对应 MIME。实测 WebVPN 图片响应可能标为 `text/plain`，因此不能仅凭上游 Content-Type 拒绝图片或判断会话过期；HTML 等非图片内容仍会被拒绝。
 
 ## 本地开发
 

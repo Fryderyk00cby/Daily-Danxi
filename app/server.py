@@ -10,6 +10,7 @@ import webbrowser
 
 from . import forum as daily
 from .ranking import DEFAULTS, rank_posts, fetch_replies
+from .images import ImageStore, ImageError
 
 STATIC = daily.ROOT / 'web'
 
@@ -151,7 +152,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(data)))
         self.send_header('Cache-Control', 'no-store')
         self.send_header('X-Content-Type-Options', 'nosniff')
-        self.send_header('Content-Security-Policy', "default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'")
+        self.send_header('Content-Security-Policy', "default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' blob:; frame-ancestors 'none'")
         self.end_headers(); self.wfile.write(data)
 
     def authorized(self):
@@ -161,7 +162,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == '/api/state':
             if not self.authorized(): return self.send(403, {'error': '无权访问'})
             return self.send(200, self.server.state.snapshot())
-        files = {'/': ('index.html', 'text/html; charset=utf-8'), '/app.js': ('app.js', 'text/javascript; charset=utf-8'), '/style.css': ('style.css', 'text/css; charset=utf-8')}
+        files = {'/': ('index.html', 'text/html; charset=utf-8'), '/app.js': ('app.js', 'text/javascript; charset=utf-8'), '/images.js': ('images.js', 'text/javascript; charset=utf-8'), '/style.css': ('style.css', 'text/css; charset=utf-8')}
         if self.path not in files: return self.send(404, {'error': '不存在'})
         name, mime = files[self.path]
         self.send(200, (STATIC / name).read_bytes(), mime)
@@ -173,7 +174,10 @@ class Handler(BaseHTTPRequestHandler):
             length = int(self.headers.get('Content-Length', 0))
             if length > 16000: raise ValueError('请求过大')
             data = json.loads(self.rfile.read(length) or '{}')
-            if self.path == '/api/login':
+            if self.path == '/api/image':
+                content, mime = self.server.images.load(data.get('url'), prefer_vpn=state.rules['webvpn'])
+                return self.send(200, content, mime)
+            elif self.path == '/api/login':
                 with state.lock:
                     if not state.login_needed: raise ValueError('当前不需要登录')
                     state.credentials = None if data.get('cancel') else dict(email=str(data.get('email', '')).strip(), password=str(data.get('password', '')))
@@ -202,12 +206,15 @@ class Handler(BaseHTTPRequestHandler):
                 with state.lock:
                     if state.busy: raise ValueError('请等待当前任务完成')
                     for name in ('session.dpapi','webvpn.dpapi','webvpn.tmp'): (daily.DATA / name).unlink(missing_ok=True)
+                    self.server.images.clear()
                     state.message = '登录缓存已清除'
             elif self.path == '/api/shutdown':
                 if state.busy: raise ValueError('请等待任务结束，或取消登录后退出')
                 threading.Thread(target=self.server.shutdown, daemon=True).start()
             else: return self.send(404, {'error': '不存在'})
             self.send(200, {'ok': True})
+        except ImageError as error:
+            self.send(502, {'error': str(error)})
         except (ValueError, KeyError, TypeError, OSError) as error:
             self.send(400, {'error': str(error)})
 
@@ -216,6 +223,7 @@ def make_server():
     server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
     server.key = secrets.token_urlsafe(32)
     server.state = State()
+    server.images = ImageStore()
     return server
 
 

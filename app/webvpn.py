@@ -30,8 +30,8 @@ def validation_summary(payload):
 def translate(url):
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     parsed = urllib.parse.urlsplit(url)
-    if parsed.scheme != 'https' or parsed.hostname not in {'forum.fduhole.com', 'auth.fduhole.com'} or parsed.port:
-        raise ValueError('WebVPN 仅支持预设的论坛和认证 HTTPS 地址。')
+    if parsed.scheme != 'https' or parsed.hostname not in {'forum.fduhole.com', 'auth.fduhole.com', 'image.fduhole.com'} or parsed.port:
+        raise ValueError('WebVPN 仅支持预设的论坛、认证和图床 HTTPS 地址。')
     key = b'wrdvpnisthebest!'
     host = parsed.hostname.encode('ascii')
     encryptor = Cipher(algorithms.AES(key), modes.CFB(key)).encryptor()
