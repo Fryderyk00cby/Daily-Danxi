@@ -44,6 +44,15 @@ class DanXiDaily {
 '@
 $readerBuild = Join-Path $readerData ('launcher-' + [Guid]::NewGuid().ToString('N') + '.exe')
 $readerOutput = Join-Path $readerRoot 'DanXiDaily.exe'
-Add-Type -TypeDefinition $readerSource -ReferencedAssemblies System.Windows.Forms -OutputAssembly $readerBuild -OutputType WindowsApplication
+$readerIcon = Join-Path $readerRoot 'assets\danxi-daily.ico'
+if (-not (Test-Path -LiteralPath $readerIcon)) { throw 'Application icon missing: assets\danxi-daily.ico' }
+$readerCompiler = New-Object System.CodeDom.Compiler.CompilerParameters
+$readerCompiler.GenerateExecutable = $true
+$readerCompiler.GenerateInMemory = $false
+$readerCompiler.OutputAssembly = $readerBuild
+$readerCompiler.CompilerOptions = "/target:winexe /win32icon:`"$readerIcon`""
+$readerCompiler.ReferencedAssemblies.Add('System.dll') | Out-Null
+$readerCompiler.ReferencedAssemblies.Add('System.Windows.Forms.dll') | Out-Null
+Add-Type -TypeDefinition $readerSource -CompilerParameters $readerCompiler
 Move-Item -LiteralPath $readerBuild -Destination $readerOutput -Force
 Write-Output 'Launcher ready: DanXiDaily.exe'
