@@ -53,7 +53,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\build_launcher.p
 测试文件已按项目清理要求移除。修改功能后至少检查对应流程：
 
 1. 页面能打开，浏览器没有 JavaScript 错误；缺少密钥的 API 请求被拒绝。
-2. 演示模式的卡片、昵称、标签和讨论详情显示正常。
+2. 卡片、昵称、标签和讨论详情显示正常。
 3. 筛选和权重变化生效，刷新页面能恢复设置。
 4. 停止保留当前结果，继续使用上次游标；重新生成开始新任务。
 5. 真实账号下，验证登录、会话恢复、分页和跟帖。不要把个人缓存加入提交。
@@ -64,4 +64,4 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\build_launcher.p
 .\.venv\Scripts\python.exe -m compileall -q main.py app
 ```
 
-在线可用性取决于论坛和学校网络。离线演示验证只能证明本地界面与处理流程，不代替真实接口验证。
+在线可用性取决于论坛和学校网络。离线验证只能证明本地界面与处理流程，不代替真实接口验证。

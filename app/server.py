@@ -19,7 +19,7 @@ def validate(raw):
     rules = dict(DEFAULTS)
     for key in rules:
         if key in raw: rules[key] = raw[key]
-    for key, low, high in [('hours', 1, 168), ('pages', 1, 100), ('limit', 1, 100), ('min_reply', 0, 100000),
+    for key, low, high in [('hours', 1, 168), ('pages', 1, 1000), ('limit', 1, 100), ('min_reply', 0, 100000),
                           ('reply_weight', 0, 100), ('favorite_weight', 0, 100), ('view_weight', 0, 100)]:
         rules[key] = int(rules[key])
         if not low <= rules[key] <= high: raise ValueError(f'{key} 应在 {low}–{high} 之间')
@@ -40,7 +40,6 @@ class State:
         self.busy = False
         self.message = '准备好了，生成你的第一份校园日报。'
         self.error = ''
-        self.demo = False
         self.coverage = ''
         self.reply_result = None
         self.login_event = threading.Event()
@@ -78,7 +77,7 @@ class State:
             selected, heat = rank_posts(self.posts, self.rules)
             return dict(rules=self.rules, busy=self.busy, message=self.message, error=self.error,
                         can_resume=bool(self.checkpoint) and not self.busy,
-                        login_needed=self.login_needed, demo=self.demo, coverage=self.coverage,
+                        login_needed=self.login_needed, coverage=self.coverage,
                         total=len(self.posts), posts=[dict(p, heat=round(heat(p), 2)) for p in selected], replies=self.reply_result)
 
     def stop(self):
@@ -96,7 +95,7 @@ class State:
             checkpoint = self.checkpoint if resume else None
             rules = dict(checkpoint['rules'] if checkpoint else self.rules)
             if not reply and not resume:
-                self.posts = []; self.checkpoint = None; self.demo = False
+                self.posts = []; self.checkpoint = None
             if not reply:
                 self.checkpoint = checkpoint or dict(now=datetime.now(daily.TZ), rules=rules, posts=[], cursor=None)
             self.message = '正在继续查找…' if resume else '正在连接…'
@@ -127,7 +126,7 @@ class State:
                     self.reply_result = dict(id=reply['id'], offset=reply['offset'], floors=floors)
                     self.message = '跟帖已更新'
                 else:
-                    self.posts = posts; self.demo = False
+                    self.posts = posts
                     self.coverage = f'{now:%m-%d %H:%M} · 最近 {rules["hours"]} 小时新帖 · ' + ('已到时间边界' if complete else '仅覆盖已抓取范围')
                     if self.stop_event.is_set() and not complete:
                         self.message = '已暂停查找，已获取内容保留；可点击“继续查找”。'
@@ -193,15 +192,6 @@ class Handler(BaseHTTPRequestHandler):
                 identity, offset = int(data['id']), int(data['offset'])
                 if identity <= 0 or not 0 <= offset <= 100000: raise ValueError('楼层参数错误')
                 state.start(dict(id=identity, offset=offset))
-            elif self.path == '/api/demo':
-                with state.lock:
-                    if state.busy: raise ValueError('请等待当前任务完成')
-                    state.posts = [dict(hole_id=1000+i, reply=38-i*8, view=600-i*80, favorite_count=6-i,
-                        tags=[{'name': tag}], floors={'first_floor': {'content': text, 'anonyname': '演示楼主', 'floor_id': 8000+i}}) for i,(tag,text) in enumerate([
-                            ('校园生活', '【演示】秋天的校园，有哪些适合散步的路线？\n想趁傍晚去看看校园里的秋色。'),
-                            ('学习交流', '【演示】图书馆自习搭子招募\n最近在准备期末，大家有什么复习计划？'),
-                            ('阅读', '【演示】分享最近读到的一本好书\n欢迎交换你的阅读清单。')])]
-                    state.checkpoint = None; state.demo = True; state.error = ''; state.coverage = '演示模式 · 全部为虚构数据'; state.message = '试试调整左侧的筛选规则。'
             elif self.path == '/api/logout':
                 with state.lock:
                     if state.busy: raise ValueError('请等待当前任务完成')

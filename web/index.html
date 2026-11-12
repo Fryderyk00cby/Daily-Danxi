@@ -1,15 +1,16 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>树洞日刊 · DanXi Daily</title><link rel="stylesheet" href="/style.css"><script src="/images.js" defer></script><script src="/app.js" defer></script></head>
 <body><aside><a class="brand" href="/">D<span>树洞日刊<small>DANXI DAILY</small></span></a><div class="side-title">你的阅读偏好</div><form id="rules">
-<div class="pair"><label>最近小时数<input name="hours" type="number" min="1" max="168" required></label><label>最多抓取页<input name="pages" type="number" min="1" max="100" required></label></div>
+<div class="pair"><label>最近小时数<input name="hours" type="number" min="1" max="168" required></label><label>最多抓取页<input name="pages" type="number" min="1" max="1000" required></label></div>
 <div class="pair"><label>展示条数<input name="limit" type="number" min="1" max="100" required></label><label>最低回复数<input name="min_reply" type="number" min="0" max="100000" required></label></div>
 <label>包含关键词<input name="include" placeholder="如：图书馆，学习"></label><p class="hint">逗号分隔，正文或标签任意命中</p>
 <label>排除关键词<input name="exclude" placeholder="不想看到的话题"></label>
 <label>排序方式<select name="sort"><option>综合热度</option><option>回复最多</option><option>浏览最多</option><option>最新发布</option></select></label>
 <label>热度权重</label><div class="triple"><label>回复<input name="reply_weight" type="number" min="0" max="100" required></label><label>收藏<input name="favorite_weight" type="number" min="0" max="100" required></label><label>浏览¹<input name="view_weight" type="number" min="0" max="100" required></label></div>
-<p class="hint">¹ 浏览量取 ln(浏览数 + 1)</p><label class="check"><input name="webvpn" type="checkbox">通过复旦 WebVPN 访问</label><button type="submit" class="outline">应用筛选并保存</button></form>
+<div class="hint" style="grid-column:1 / -1">热度 = 回复数 × 回复权重<br>＋ 收藏数 × 收藏权重<br>＋ ln(浏览数 + 1) × 浏览权重<br>¹ ln 为自然对数，用于减小浏览量的影响。权重仅影响「综合热度」排序。</div>
+<label class="check"><input name="webvpn" type="checkbox" aria-describedby="webvpn-help">通过复旦 WebVPN 访问</label><p id="webvpn-help" class="hint" style="grid-column:1 / -1">复旦校园网内无需勾选；校外网络无法直接访问树洞时，请勾选并完成复旦统一身份认证。修改后点击「应用筛选并保存」，再生成日报。</p><button type="submit" class="outline">应用筛选并保存</button></form>
 <div class="side-footer"><p>内容与登录会话仅保存在本机</p><button id="logout" class="text-btn">清除登录缓存</button><button id="shutdown" class="text-btn">退出本地服务</button></div></aside>
-<main><header><div><p class="eyebrow">THE CAMPUS, IN CONVERSATION</p><h1>今天，校园在聊什么？</h1><p class="subtitle">留一点时间，读读身边发生的事。</p></div><div class="actions"><button id="demo" class="outline">看看演示</button><button id="stop" class="outline" disabled>停止查找</button><button id="resume" class="outline" hidden>继续查找</button><button id="generate" class="primary">✦ 一键生成日报</button></div></header>
+<main><header><div><p class="eyebrow">THE CAMPUS, IN CONVERSATION</p><h1>今天，校园在聊什么？</h1><p class="subtitle">留一点时间，读读身边发生的事。</p></div><div class="actions"><button id="stop" class="outline" disabled>停止查找</button><button id="resume" class="outline" hidden>继续查找</button><button id="generate" class="primary">✦ 一键生成日报</button></div></header>
 <section class="status-panel"><div><span id="dot" class="dot"></span><span id="status" role="status">正在连接本地服务…</span></div><div id="coverage" class="hint"></div><div id="error" role="alert"></div></section>
 <div class="list-heading"><h2>热议精选 <span id="count">0</span></h2><span>自定义热度 · 非官方榜单</span></div><div id="posts"></div><footer class="page-footer">DANXI DAILY / LOCAL READER · 关键词与热度筛选在已抓取范围内生效，修改时间或页数后请重新生成。</footer></main>
 <dialog id="detail"><div class="dialog-head"><div><p class="eyebrow">CONVERSATION</p><h2 id="detail-title"></h2></div><button id="close-detail" class="close" aria-label="关闭详情">×</button></div><div id="detail-tags" class="tags"></div><div id="floors"></div><div class="reply-footer"><span id="reply-status"></span><button id="more" class="primary">加载更多跟帖</button></div></dialog>

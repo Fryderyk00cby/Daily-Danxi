@@ -2,7 +2,7 @@
 import math
 from . import forum as daily
 
-DEFAULTS = dict(hours=24, pages=40, limit=20, min_reply=0, include='', exclude='',
+DEFAULTS = dict(hours=24, pages=100, limit=20, min_reply=0, include='', exclude='',
                 reply_weight=5, favorite_weight=3, view_weight=1, sort='综合热度', webvpn=True)
 
 
